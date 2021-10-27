@@ -23,6 +23,7 @@ public class NetworkKart : MonoBehaviourPun, IPunObservable
         }
         else
         {
+
             //Network player, receive data
             latestPos = (Vector3)stream.ReceiveNext();
             latestRot = (Quaternion)stream.ReceiveNext();

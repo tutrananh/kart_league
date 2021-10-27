@@ -10,10 +10,7 @@ public class GameManager : MonoBehaviourPun
     private bool timerIsRunning;
     private float timeRemaining = 180;
 
-    private Vector3 defaultBallPosition;
-    public Transform ballPosition;
-
-    public GameObject spawnPlayers;
+    public SpawnPlayers spawnPlayers;
     public GameObject endGame;
 
     public Text blueGoals;
@@ -25,13 +22,11 @@ public class GameManager : MonoBehaviourPun
     // Start is called before the first frame update
     private void Awake()
     {
+
         endGame.SetActive(false);
         GameObject themeSong = GameObject.FindGameObjectWithTag("ThemeSong");
         Destroy(themeSong.gameObject);
-
-            timerIsRunning = true;
-        defaultBallPosition = new Vector3(-8.62f, 2.13f, 0.48f);
-
+        timerIsRunning = true;
     }
     void Start()
     {
@@ -41,34 +36,39 @@ public class GameManager : MonoBehaviourPun
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(PhotonNetwork.CurrentRoom.PlayerCount);
-        if (timerIsRunning)
+        if (PhotonNetwork.IsMasterClient)
         {
-            if (timeRemaining > 0)
+            if (timerIsRunning)
             {
-                timeRemaining -= Time.deltaTime;
+                if (timeRemaining > 0)
+                {
+                    timeRemaining -= Time.deltaTime;
+                }
+                else
+                {
+                    timeRemaining = 0;
+                    timerIsRunning = false;
+                }
+                DisplayTime(timeRemaining);
             }
             else
             {
-                timeRemaining = 0;
-                timerIsRunning = false;
+                if (redGoal > blueGoal)
+                {
+                    winner.text = "Red team has won the match!!!";
+                }
+                else if (redGoal == blueGoal)
+                {
+                    winner.text = "Draw match!!! What a game!";
+                }
+                else
+                {
+                    winner.text = "Blue team has won the match!!!";
+                }
+                endGame.SetActive(true);
             }
-            DisplayTime(timeRemaining);
-        }
-        else
-        {
-            if (redGoal > blueGoal)
-            {
-                winner.text = "Red team has won the match!!!";
-            }else if (redGoal == blueGoal)
-            {
-                winner.text = "Draw match!!! What a game!";
-            }
-            else
-            {
-                winner.text = "Blue team has won the match!!!";
-            }
-            endGame.SetActive(true);
+            PhotonView PV = GetComponent<PhotonView>();
+            PV.RPC("SendTimeToClient", RpcTarget.Others, timerIsRunning, timeRemaining);
         }
     }
     void DisplayTime(float timeToDisplay)
@@ -81,24 +81,27 @@ public class GameManager : MonoBehaviourPun
 
     public void UpdateGoal(bool side)
     {
-        bool team = side;
-        if (team)
+        if (!endGame.activeSelf)
         {
-            redGoal++;
-            redGoals.text = $"{redGoal} Red";
+            spawnPlayers.ReSpawnPlayer();
+            bool team = side;
+            if (team)
+            {
+                redGoal++;
+                redGoals.text = $"{redGoal} Red";
+            }
+            else
+            {
+                blueGoal++;
+                blueGoals.text = $"Blue {blueGoal}";
+            }
+            PhotonView PV = GetComponent<PhotonView>();
+            PV.RPC("Setting", RpcTarget.Others, team);
         }
-        else
-        {
-            blueGoal++;
-            blueGoals.text = $"Blue {blueGoal}";
-        }
-        ballPosition.position = defaultBallPosition;
-        PhotonView PV = GetComponent<PhotonView>();
-        PV.RPC("Setting", RpcTarget.Others, team, defaultBallPosition);
     }
 
     [PunRPC]
-    void Setting( bool side, Vector3 defaultBallPosition)
+    void Setting( bool side)
     {
         if (side)
         {
@@ -110,7 +113,35 @@ public class GameManager : MonoBehaviourPun
             blueGoal++;
             blueGoals.text = $"Blue {blueGoal}";
         }
-        ballPosition.position = defaultBallPosition;
+        spawnPlayers.ReSpawnPlayer();
+    }
+
+    [PunRPC]
+    void SendTimeToClient(bool isRunning, float timeRev)
+    {
+        timerIsRunning = isRunning;
+        timeRemaining = timeRev;
+        if (timerIsRunning)
+        {
+                DisplayTime(timeRemaining - 0.1f);
+        }
+        else
+        {
+            DisplayTime(0);
+            if (redGoal > blueGoal)
+            {
+                winner.text = "Red team has won the match!!!";
+            }
+            else if (redGoal == blueGoal)
+            {
+                winner.text = "Draw match!!! What a game!";
+            }
+            else
+            {
+                winner.text = "Blue team has won the match!!!";
+            }
+            endGame.SetActive(true);
+        }
     }
 
 
