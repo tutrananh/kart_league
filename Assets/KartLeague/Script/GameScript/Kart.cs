@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using UnityEngine.UI;
 
 public class Kart : MonoBehaviourPun
 {
@@ -21,10 +22,9 @@ public class Kart : MonoBehaviourPun
     public LayerMask whatIsGround;
     public float groundRayLength = .5f;
     public Transform groundRayPoint;
+
     public Transform whellFrontLeft, whellFrontRight, whellRearLeft, whellRearRight;
 
-    Vector3 networkPosition;
-    Quaternion networkRotation;
     // Start is called before the first frame update
     private void Awake()
     {
@@ -43,7 +43,7 @@ public class Kart : MonoBehaviourPun
     {
         if (photonView.IsMine)
         {
-            if (Input.GetMouseButtonDown(2) && grounded)
+            if (Input.GetMouseButtonDown(1) && grounded)
             {
                 rigidbody.AddForce(Vector3.up * 5000, ForceMode.Impulse);
             }
@@ -60,6 +60,7 @@ public class Kart : MonoBehaviourPun
     }
     private void LocalFixedUpdate()
     {
+        //Debug.Log("Van toc xe: " + rigidbody.velocity);
 
         grounded = false;
         RaycastHit hit;
